@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 32
 #define PIXEL_SIZE 10
 
-#define TICK_INTERVAL 1
+#define TICK_INTERVAL 2
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -121,10 +121,12 @@ int main(int argc, char *argv[]) {
 
     SDL_Event event;
 
-    Uint32 next_time = SDL_GetTicks() + TICK_INTERVAL;
-    
+    Uint64 last_ticks = SDL_GetTicks64();
     
     for (;;) {
+        if (SDL_GetTicks64() - last_ticks < TICK_INTERVAL) continue;
+        last_ticks = SDL_GetTicks64();
+
         opcode = memory[pc] << 8 | memory[pc + 1];
 
         //printf("%04X, pc = %d\n", opcode, pc);
@@ -433,9 +435,5 @@ int main(int argc, char *argv[]) {
         if (sound_timer == 1) printf("BEEP\n");
         if (delay_timer > 0) delay_timer--;
         if (sound_timer > 0) sound_timer--;
-
-        Uint32 now = SDL_GetTicks();
-        if (next_time > now) SDL_Delay(next_time - now);
-        next_time += TICK_INTERVAL;
     }
 }
