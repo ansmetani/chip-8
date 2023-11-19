@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 32
 #define PIXEL_SIZE 10
 
-#define TICK_INTERVAL 2
+#define TICK_INTERVAL (1000 / 60)
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -59,6 +59,13 @@ int main(int argc, char *argv[]) {
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    };
+
+    const int sdl_to_key[16] = {
+        SDLK_x, SDLK_1, SDLK_2, SDLK_3,
+        SDLK_q, SDLK_w, SDLK_e, SDLK_a,
+        SDLK_s, SDLK_d, SDLK_z, SDLK_c,
+        SDLK_4, SDLK_r, SDLK_f, SDLK_v
     };
     
     for (int i = 0; i < 80; i++) {
@@ -121,12 +128,9 @@ int main(int argc, char *argv[]) {
 
     SDL_Event event;
 
-    Uint64 last_ticks = SDL_GetTicks64();
+    Uint32 last_ticks = SDL_GetTicks();
     
     for (;;) {
-        if (SDL_GetTicks64() - last_ticks < TICK_INTERVAL) continue;
-        last_ticks = SDL_GetTicks64();
-
         opcode = memory[pc] << 8 | memory[pc + 1];
 
         //printf("%04X, pc = %d\n", opcode, pc);
@@ -368,6 +372,12 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_flag) {
+            // Change to remaining time 
+            // Uint32 remaining_ticks = TICK_INTERVAL - SDL_GetTicks() + last_ticks;
+            Uint32 current_tick_interval = SDL_GetTicks() - last_ticks;
+            if (current_tick_interval < TICK_INTERVAL) SDL_Delay(TICK_INTERVAL - current_tick_interval);
+            last_ticks = SDL_GetTicks64();
+
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -385,6 +395,16 @@ int main(int argc, char *argv[]) {
 
         SDL_PollEvent(&event);
 
+        if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+            int key_state = (event.type == SDL_KEYDOWN) ? 1 : 0;
+            for (int i = 0; i < 16; i++) {
+                if (event.key.keysym.sym == sdl_to_key[i]) {
+                    key[i] = key_state;
+                }
+            }
+        }
+
+        /*
         if (event.type == SDL_KEYDOWN) {
             if (event.key.keysym.sym == SDLK_1) key[0x1] = 1;
             if (event.key.keysym.sym == SDLK_2) key[0x2] = 1;
@@ -426,6 +446,7 @@ int main(int argc, char *argv[]) {
             if (event.key.keysym.sym == SDLK_c) key[0xB] = 0;
             if (event.key.keysym.sym == SDLK_v) key[0xF] = 0;
         }
+        */
         if (event.type == SDL_QUIT) {
             SDL_DestroyWindow(window);
             SDL_Quit();
